@@ -50,7 +50,6 @@ To run the tests, from the built elasticsearch-base charm directory, run the fol
 bundletester -t . -l DEBUG -y tests/tests.yaml 
 ```
 
-
 ### Java
 This charm can take advantage of either openjdk Java, or Oracle Java.
 For openjdk, you must relate elasticsearch to the openjdk subordinate:
