@@ -41,6 +41,23 @@ def connect_to_client(connected_clients):
         add_fw_exception(c)
 ```
 
+### Java
+This charm can take advantage of either openjdk Java, or Oracle Java.
+For openjdk, you must relate elasticsearch to the openjdk subordinate:
+```bash
+juju deploy elasticsearch-base
+juju deploy openjdk
+juju add-relation elasticsearch-base openjdk
+```
+
+For Oracle Java, you must add the relation to the Java subordinate:
+```bash
+juju deploy elasticsearch-base
+juju deploy cs:~jamesbeedy/java
+juju add-relation elasticsearch-base java
+```
+
+
 ### Peer
 - not implemented yet
 
