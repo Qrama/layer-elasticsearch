@@ -62,7 +62,7 @@ juju add-relation elasticsearch-base openjdk
 For Oracle Java, you must add the relation to the Java subordinate:
 ```bash
 juju deploy elasticsearch-base
-juju deploy cs:~jamesbeedy/java
+juju deploy cs:~jamesbeedy/java-1
 juju add-relation elasticsearch-base java
 ```
 
