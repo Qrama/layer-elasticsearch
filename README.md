@@ -41,6 +41,16 @@ def connect_to_client(connected_clients):
         add_fw_exception(c)
 ```
 
+### Tests (WIP)
+Tests are included for elasticsearch-base in the tests directory,
+and are intended to be ran with bundle tester on the build elasticsearch-base charm.
+
+To run the tests, from the built elasticsearch-base charm directory, run the following command:
+```bash
+bundletester -t . -l DEBUG -y tests/tests.yaml 
+```
+
+
 ### Java
 This charm can take advantage of either openjdk Java, or Oracle Java.
 For openjdk, you must relate elasticsearch to the openjdk subordinate:
