@@ -54,15 +54,15 @@ bundletester -t . -l DEBUG -y tests/tests.yaml
 This charm can take advantage of either openjdk Java, or Oracle Java.
 For openjdk, you must relate elasticsearch to the openjdk subordinate:
 ```bash
-juju deploy elasticsearch-base
-juju deploy openjdk
+juju deploy elasticsearch-base --series xenial
+juju deploy openjdk --series xenial
 juju add-relation elasticsearch-base openjdk
 ```
 
 For Oracle Java, you must add the relation to the Java subordinate:
 ```bash
-juju deploy elasticsearch-base
-juju deploy cs:~jamesbeedy/java-1
+juju deploy elasticsearch-base --series xenial
+juju deploy cs:~jamesbeedy/java-1 --series xenial
 juju add-relation elasticsearch-base java
 ```
 
