@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+import amulet
+import requests
+import unittest
+
+
+class TestDeployment(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.deployment = amulet.Deployment(series="xenial")
+
+        cls.deployment.add('elasticsearch-base')
+        cls.deployment.add('openjdk')
+        cls.deployment.relate('elasticsearch-base:java', 'openjdk:java')
+
+        try:
+            cls.deployment.setup(timeout=900)
+            cls.deployment.sentry.wait()
+        except amulet.helpers.TimeoutError:
+            amulet.raise_status(amulet.SKIP, msg="Environment wasn't stood up in time")
+        except:
+            raise
+
+    def test_1_verify_version(self):
+        print('test_1')
+
+
+if __name__ == '__main__':
+    unittest.main()
