@@ -41,9 +41,9 @@ def es_version():
                 log("Polling for elasticsearch api: %d" % counter)
                 req = requests.get('http://localhost:9200')
                 status_code = req.status_code
-                es_curl_data = req.text
-                es_vers_str = es_curl_data.strip()
-                json_acceptable_data = es_vers_str.replace("\n", "").replace("'", "\"")
+                es_curl_data = req.text.strip()
+                json_acceptable_data = \
+                    es_curl_data.replace("\n", "").replace("'", "\"")
                 return json.loads(json_acceptable_data)['version']['number']
             except requests.exceptions.ConnectionError:
                 sleep(1)
