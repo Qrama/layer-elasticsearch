@@ -23,7 +23,7 @@ def add_fw_exception(host_ip):
         'to', 'any', 'port', '9200'])
 
 
-def  rm_fw_exception(host_ip):
+def rm_fw_exception(host_ip):
     sp.check_call([
         'ufw', 'delete', 'allow', 'proto', 'tcp', 'from', host_ip,
         'to', 'any', 'port', '9200'])

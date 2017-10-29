@@ -1,4 +1,19 @@
 options:
+  min-master-count:
+    description: |
+      Minimum number of master nodes
+    default: 1
+    type: int
+  custom-config:
+    description: |
+      String representation of custom elasticsearch.yml configs
+    type: string
+    default: ""
+  node-type:
+    description: |
+      Type of elasticsearch node. Choices are 'data', 'master', 'ingest', 'tribe', 'all'.
+    type: string
+    default: 'all'
   install_sources:
     description: |
       list of extra apt sources, per charm-helpers standard
@@ -65,7 +80,7 @@ options:
       will also allow port 22 from anywhere.
     type: boolean
     default: false
-  cluster_name:
+  cluster-name:
     description: |
       This sets the elasticsearch cluster name. This name is then added to the
       elasticsearch.yml file

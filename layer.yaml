@@ -1,5 +1,9 @@
 includes:
   - 'layer:basic'
   - 'layer:apt'
-  - 'interface:java'
+  - 'interface:host-port'
+options:
+  basic:
+    packages:
+      - 'openjdk-8-jre-headless'
 repo: "https://github.com/jamesbeedy/juju-layer-elasticsearch-base"

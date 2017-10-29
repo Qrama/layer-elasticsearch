@@ -1,10 +1,85 @@
 #!/usr/bin/env python3
 # pylint: disable=c0111,c0103,c0301
 import json
-from time import sleep
-import subprocess as sp
+import os
 import requests
-from charmhelpers.core.hookenv import status_set, log
+import shutil
+from time import sleep
+
+from jinja2 import Environment, FileSystemLoader
+
+from charmhelpers.core.hookenv import (
+    charm_dir,
+    config,
+    log,
+    network_get,
+    status_set,
+)
+
+from charmhelpers.core import unitdata
+
+from charmhelpers.core.host import (
+    service_running,
+    service_start,
+    service_restart
+)
+
+
+ES_PUBLIC_INGRESS_ADDRESS = network_get('public')['ingress-addresses'][0]
+
+ES_CLUSTER_INGRESS_ADDRESS = network_get('cluster')['ingress-addresses'][0]
+
+DISCOVERY_FILE_PATH = os.path.join(
+    '/', 'etc', 'elasticsearch', 'discovery-file', 'unicast_hosts.txt')
+
+DEFAULT_FILE_PATH = os.path.join('/', 'etc', 'default', 'elasticsearch')
+
+ES_NODE_TYPE = config('node-type')
+
+ES_HTTP_PORT = 9200
+
+ES_TRANSPORT_PORT = 9300
+
+ES_PLUGIN = os.path.join(
+    '/', 'usr', 'share', 'elasticsearch', 'bin', 'elasticsearch-plugin')
+
+MASTER_NODE_CONFIG = """
+node.master: true
+node.data: false
+node.ingest: false
+"""
+
+DATA_NODE_CONFIG = """
+node.master: false
+node.data: true
+node.ingest: false
+"""
+
+INGEST_NODE_CONFIG = """
+node.master: false
+node.data: false
+node.ingest: true
+search.remote.connect: false
+"""
+
+COORDINATING_NODE_CONFIG = """
+node.master: false
+node.data: false
+node.ingest: false
+search.remote.connect: false
+"""
+
+NODE_TYPE_MAP = {'all': None,
+                 'master': MASTER_NODE_CONFIG,
+                 'data': DATA_NODE_CONFIG,
+                 'ingest': INGEST_NODE_CONFIG,
+                 'tribe': COORDINATING_NODE_CONFIG}
+
+ELASTICSEARCH_YML_PATH = \
+    os.path.join('/', 'etc', 'elasticsearch', 'elasticsearch.yml')
+
+
+kv = unitdata.kv()
 
 
 class ElasticsearchError(Exception):
@@ -17,13 +92,11 @@ class ElasticsearchApiError(ElasticsearchError):
         self.message = message
 
 
-def is_container():
-    """Return True if system is running inside a container"""
-    virt_type = sp.check_output('systemd-detect-virt').decode().strip()
-    if virt_type == 'lxc':
-        return True
+def start_restart(service):
+    if service_running(service):
+        service_restart(service)
     else:
-        return False
+        service_start(service)
 
 
 def es_version():
@@ -49,6 +122,73 @@ def es_version():
                 sleep(1)
         log("Elasticsearch needs debugging, cannot access api")
         status_set('blocked', "Cannot access elasticsearch api")
-        raise ElasticsearchApiError("%d seconds waiting for es api to no avail" % counter)
+        raise ElasticsearchApiError(
+            "%d seconds waiting for es api to no avail" % counter)
     except ElasticsearchApiError as e:
         log(e.message)
+
+
+def render_elasticsearch_file(template, file_path, ctxt,
+                              user=None, group=None):
+    if not user and not group:
+        user = 'elasticsearch'
+        group = 'elasticsearch'
+    elif user and not group:
+        user = user
+        group = user
+    elif user and group:
+        user = user
+        group = group
+
+    # Remove file if exists
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
+    # Spew rendered template into file
+    spew(file_path, load_template(template).render(ctxt))
+
+    # Set perms
+    chown(os.path.dirname(file_path), user=user, group=group, recursive=True)
+
+
+def load_template(name, path=None):
+    """ load template file
+    :param str name: name of template file
+    :param str path: alternate location of template location
+    """
+    if path is None:
+        path = os.path.join(charm_dir(), 'templates')
+    env = Environment(
+        loader=FileSystemLoader(path))
+    return env.get_template(name)
+
+
+def spew(path, data):
+    """ Writes data to path
+    :param str path: path of file to write to
+    :param str data: contents to write
+    """
+    with open(path, 'w') as f:
+        f.write(data)
+
+
+def chown(path, user, group=None, recursive=False):
+    """
+    Change user/group ownership of file
+    :param path: path of file or directory
+    :param str user: new owner username
+    :param str group: new owner group name
+    :param bool recursive: set files/dirs recursively
+    """
+    try:
+        if not recursive or os.path.isfile(path):
+            shutil.chown(path, user, group)
+        else:
+            for root, dirs, files in os.walk(path):
+                shutil.chown(root, user, group)
+                for item in dirs:
+                    shutil.chown(os.path.join(root, item), user, group)
+                for item in files:
+                    shutil.chown(os.path.join(root, item), user, group)
+    except OSError as e:
+        print(e)
