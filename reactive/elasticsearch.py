@@ -35,7 +35,7 @@ from charmhelpers.core import unitdata
 
 import charms.apt
 
-from charms.layer.elasticsearch_base import (
+from charms.layer.elasticsearch import (
     # pylint: disable=E0611,E0401,C0412
     chown,
     es_version,
