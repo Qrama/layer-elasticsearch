@@ -366,13 +366,13 @@ def elasticsearch_node_available():
 
 # Client Relation
 @when('endpoint.client.joined',
-      'elasticsearch.access.ports.available')
+      'elasticsearch.{}.available'.format(ES_NODE_TYPE))
 def provide_client_relation_data():
     if ES_NODE_TYPE not in ['master', 'all']:
-        log("SOMETHING BAD IS HAPPENING - wronge node type for relation")
+        log("SOMETHING BAD IS HAPPENING - wronge nodetype for client relation")
         status_set('blocked',
                    "Cannot make relation to master - "
-                   "wrong node-type for relation, please remove relation")
+                   "wrong node-typeforclient relation, please remove relation")
         return
     else:
         open_port(ES_HTTP_PORT)
