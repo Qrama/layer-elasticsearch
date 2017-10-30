@@ -131,6 +131,7 @@ def render_elasticsearch_conifg():
     """
     ctxt = \
         {'cluster_name': config('cluster-name'),
+         'cluster_network_ip': ES_PUBLIC_INGRESS_ADDRESS,
          'node_type': NODE_TYPE_MAP[config('node-type')],
          'custom_config': config('custom-config')}
 

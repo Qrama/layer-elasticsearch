@@ -18,15 +18,40 @@ Elasticsearch node to configure. In order to orchestrate this charm to facilitat
 you must configure the node-type on a per application basis.
 
 The options for the `node-type` config can be explained as follows:
+
 * `all` - The node will assume all roles of Elasticsearch, there will be no difference in configuration from one node to the next.
+
 * `master` - The node will assume the 'master' node-type. Master nodes will wait for the number of peers to be >= the charm configuration
 option `minn-master-count` (this defaults to 1) before bootstrapping the cluster. 
+
 * `tribe` - The node will assume the 'tribe' node-type. Tribe nodes will wait until they have a relation to the master before
 joining the cluster.
+
 * `data` - The node will assume the 'data' node-type. Data nodes will wait until they have a relation to the master before
 joining the cluster.
+
 * `ingest` - The node will assume the 'ingest' node-type. Ingest nodes will wait until they have a relation to the master before
 joining the cluster.
+
+# Juju Storage
+This charm supports Juju storage (as of Juju 2.3).
+
+To deploy this charm using Juju storage (most common for data nodes)
+```bash
+juju deploy elasticsearch --storage data=ebs,10G
+```
+Following deployment, we can see the attached volume, and that is being used for Elasticsearch data:
+```bash
+$ df -h | grep elasticsearch
+/dev/xvdf1      9.8G   23M  9.2G   1% /srv/elasticsearch-data
+
+$ ls -la /srv/elasticsearch-data
+total 28
+drwxr-xr-x 4 elasticsearch elasticsearch  4096 Oct 30 21:53 .
+drwxr-xr-x 3 root          root           4096 Oct 30 21:49 ..
+drwx------ 2 elasticsearch elasticsearch 16384 Oct 30 21:49 lost+found
+drwxr-xr-x 3 elasticsearch elasticsearch  4096 Oct 30 21:53 nodes
+```
 
 ### Basic (node-type='all')
 Deploying this charm with the defaults will get you Elasticsearch installed from the elastic.co apt sources, and an all-in-one node-type, where
