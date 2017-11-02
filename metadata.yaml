@@ -32,6 +32,8 @@ provides:
     interface: "host-port"
   tribe-node:
     interface: "host-port"
+  grafana-source:
+    interface: "grafana-source"
 peers:
   member:
     interface: "host-port"
@@ -42,8 +44,3 @@ storage:
   data:
     type: filesystem
     location: /srv/elasticsearch-data
-resources:
-  elasticsearch-deb:
-    type: file
-    filename: elasticsearch.deb
-    description: Elasticsearch deb as obtained from https://www.elastic.co/downloads

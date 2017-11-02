@@ -1,9 +1,10 @@
 includes:
   - 'layer:basic'
-  - 'layer:apt'
+  - 'layer:elastic-base'
+  - 'layer:leadership'
+  - 'interface:grafana-source'
   - 'interface:host-port'
 options:
-  basic:
-    packages:
-      - 'openjdk-8-jre-headless'
+  elastic-base:
+    elastic-pkg: "elasticsearch"
 repo: "https://github.com/jamesbeedy/juju-layer-elasticsearch-base"

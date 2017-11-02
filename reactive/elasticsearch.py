@@ -21,19 +21,15 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     open_port,
-    resource_get,
     status_set,
 )
 from charmhelpers.core.host import (
     service_restart,
     service_running,
     service_start,
-    is_container,
 )
 
 from charmhelpers.core import unitdata
-
-import charms.apt
 
 from charms.layer.elasticsearch import (
     # pylint: disable=E0611,E0401,C0412
@@ -59,6 +55,11 @@ kv = unitdata.kv()
 register_trigger(when='elasticsearch.version.set',
                  set_flag='elasticsearch.init.complete')
 
+register_trigger(when='elasticsearch.grafana.available',
+                 clear_flag='elasticsearch.grafana.unavailable')
+
+register_trigger(when='elasticsearch.grafana.unavailable',
+                 clear_flag='elasticsearch.grafana.available')
 
 set_flag('elasticsearch.{}'.format(ES_NODE_TYPE))
 
@@ -131,7 +132,7 @@ def render_elasticsearch_conifg():
     """
     ctxt = \
         {'cluster_name': config('cluster-name'),
-         'cluster_network_ip': ES_PUBLIC_INGRESS_ADDRESS,
+         'cluster_network_ip': ES_CLUSTER_INGRESS_ADDRESS,
          'node_type': NODE_TYPE_MAP[config('node-type')],
          'custom_config': config('custom-config')}
 
@@ -142,38 +143,6 @@ def render_elasticsearch_conifg():
         set_flag('elasticsearch.init.config.rendered')
     set_flag('elasticsearch.needs.restart')
     clear_flag('render.elasticsearch.yml')
-
-
-# Install/Init ops
-@when_not('elasticsearch.installed')
-def install_elasticsearch():
-    """Check for container, install elasticsearch
-    from either apt or supplied resource .deb.
-    """
-    # TODO(jamesbeedy): SNAP Elasticsearch, integrate snap packaging
-
-    # Workaround for container installs is to set
-    # ES_SKIP_SET_KERNEL_PARAMETERS if in container
-    # so kernel files will not need to be modified on
-    # elasticsearch install. See
-    # https://github.com/elastic/elasticsearch/commit/32df032c5944326e351a7910a877d1992563f791
-    if is_container():
-        os.environ['ES_SKIP_SET_KERNEL_PARAMETERS'] = 'true'
-        status_set('maintenance',
-                   "Installing Elasticsearch in container based system")
-
-    es_deb = resource_get('elasticsearch-deb')
-    if os.stat(es_deb).st_size > 0:
-        status_set('maintenance',
-                   "Installing Elasticsearch from supplied .deb resource")
-        sp.call(['dpkg', '-i', es_deb])
-        set_flag('deb.installed.elasticsearch')
-    else:
-        status_set('maintenance',
-                   "Installing Elasticsearch from elastic.co apt repos")
-        charms.apt.queue_install(['elasticsearch'])
-
-    set_flag('elasticsearch.installed')
 
 
 @when_any('apt.installed.elasticsearch',
@@ -498,3 +467,27 @@ def provide_master_node_type_relation_data():
       'elasticsearch.juju.started')
 def clear_min_master_flag():
     clear_flag('elasticsearch.min.masters.available')
+
+
+@when('elasticsearch.{}.available'.format(ES_NODE_TYPE),
+      'leadership.is_leader',
+      'grafana-source.available')
+@when_any('elasticsearch.all',
+          'elasticsearch.master')
+@when_not('elasticsearch.grafana.available')
+def provide_grafana_source(grafana):
+    grafana.provide(
+        source_type='elasticsearch',
+        url_or_port='http://{}:{}'.format(
+            ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT),
+        description='Juju generated source elasticsearch source',
+        database='elasticsearch')
+    status_set('active', 'Grafana joined')
+    set_flag('elasticsearch.grafana.available')
+
+
+@when_not('grafana-source.available',
+          'elasticsearch.grafana.unavailable')
+@when('elasticsearch.grafana.available')
+def remove_grafana_source_flags():
+    set_flag('elasticsearch.grafana.unavailable')
