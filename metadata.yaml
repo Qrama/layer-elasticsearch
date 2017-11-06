@@ -13,27 +13,11 @@ series:
 - xenial
 subordinate: false
 requires:
-  master:
-    interface: "host-port"
-  master-data:
-    interface: "host-port"
-  master-ingest:
-    interface: "host-port"
-  master-tribe:
+  require-master:
     interface: "host-port"
 provides:
-  client:
+  provide-master:
     interface: "host-port"
-  master-node:
-    interface: "host-port"
-  data-node:
-    interface: "host-port"
-  ingest-node:
-    interface: "host-port"
-  tribe-node:
-    interface: "host-port"
-  grafana-source:
-    interface: "grafana-source"
 peers:
   member:
     interface: "host-port"

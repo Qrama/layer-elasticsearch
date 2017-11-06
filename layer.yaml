@@ -2,7 +2,6 @@ includes:
   - 'layer:basic'
   - 'layer:elastic-base'
   - 'layer:leadership'
-  - 'interface:grafana-source'
   - 'interface:host-port'
 options:
   elastic-base:

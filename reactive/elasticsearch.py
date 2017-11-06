@@ -169,6 +169,7 @@ def prepare_data_dir():
         status_set('blocked', "DATA DIR NOT AVAILABLE _DEBUG")
         return
 
+
 @when_any('apt.installed.elasticsearch',
           'deb.installed.elasticsearch')
 @when_not('elasticsearch.defaults.available')
@@ -375,53 +376,10 @@ def provide_client_relation_data():
     clear_flag('endpoint.client.joined')
 
 
-# NON-MASTER NODE Relations
-@when('endpoint.data-node.joined')
-def provide_data_node_type_relation_data():
-    if not ES_NODE_TYPE == 'data':
-        log("SOMETHING BAD IS HAPPENING - wronge node type for relation")
-        status_set('blocked',
-                   "Cannot make relation to master - "
-                   "wrong node-type for relation")
-        return
-    else:
-        context.endpoints.data_node.configure(
-            ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT)
-    clear_flag('endpoint.data-node.joined')
-
-
-@when('endpoint.ingest-node.joined')
-def provide_ingest_node_type_relation_data():
-    if not ES_NODE_TYPE == 'ingest':
-        log("SOMETHING BAD IS HAPPENING - wronge node type for relation")
-        status_set('blocked',
-                   "Cannot make relation to master - "
-                   "wrong node-type for relation")
-        return
-    else:
-        context.endpoints.ingest_node.configure(
-            ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT)
-    clear_flag('endpoint.ingest-node.joined')
-
-
-@when('endpoint.tribe-node.joined')
-def provide_tribe_node_type_relation_data():
-    if not ES_NODE_TYPE == 'tribe':
-        log("SOMETHING BAD IS HAPPENING - wronge node type for relation")
-        status_set('blocked',
-                   "Cannot make relation to master - "
-                   "wrong node-type for relation")
-        return
-    else:
-        context.endpoints.tribe_node.configure(
-            ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT)
-    clear_flag('endpoint.tribe-node.joined')
-
-
-@when('endpoint.master.host-port')
+@when('endpoint.require-master.host-port')
 def get_all_master_nodes():
     master_nodes = []
-    for master_node in context.endpoints.master.relation_data():
+    for master_node in context.endpoints.require_master.relation_data():
         master_nodes.append(master_node['host'])
     kv.set('master-nodes', master_nodes)
 
@@ -430,50 +388,8 @@ def get_all_master_nodes():
     clear_flag('endpoint.master.host-port')
 
 
-# MASTER NODE Relations
-@when('endpoint.master-data.host-port',
-      'elasticsearch.min.masters.available')
-def get_set_data_nodes():
-    data_nodes = []
-    for data_node in context.endpoints.master_data.relation_data():
-        data_nodes.append(data_node['host'])
-    kv.set('data-nodes', data_nodes)
-
-    status_set('active',
-               "Data node(s) acquired - {}".format(" ".join(data_nodes)))
-    set_flag('render.elasticsearch.unicast-hosts')
-    clear_flag('endpoint.master-data.host-port')
-
-
-@when('endpoint.master-ingest.host-port',
-      'elasticsearch.min.masters.available')
-def get_set_ingest_nodes():
-    ingest_nodes = []
-    for ingest_node in context.endpoints.master_ingest.relation_data():
-        ingest_nodes.append(ingest_node['host'])
-    kv.set('ingest-nodes', ingest_nodes)
-
-    status_set('active',
-               "Ingest node(s) acquired - {}".format(" ".join(ingest_nodes)))
-    set_flag('render.elasticsearch.unicast-hosts')
-    clear_flag('endpoint.master-ingest.host-port')
-
-
-@when('endpoint.master-tribe.host-port',
-      'elasticsearch.min.masters.available')
-def get_set_tribe_nodes():
-    tribe_nodes = []
-    for tribe_node in context.endpoints.master_tribe.relation_data():
-        tribe_nodes.append(tribe_node['host'])
-    kv.set('tribe-nodes', tribe_nodes)
-
-    status_set('active',
-               "Tribe node(s) acquired - {}".format(" ".join(tribe_nodes)))
-    set_flag('render.elasticsearch.unicast-hosts')
-    clear_flag('endpoint.master-tribe.host-port')
-
-
-@when('endpoint.master-node.joined')
+# MASTER NODE Relation
+@when('endpoint.provide-master.joined')
 def provide_master_node_type_relation_data():
     if not ES_NODE_TYPE == 'master':
         log("SOMETHING BAD IS HAPPENING - wronge node type for relation")
@@ -482,7 +398,7 @@ def provide_master_node_type_relation_data():
                    "wrong node-type for relation")
         return
     else:
-        context.endpoints.master_node.configure(
+        context.endpoints.provide_master.configure(
             ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT)
     clear_flag('endpoint.master-node.joined')
 
@@ -492,26 +408,3 @@ def provide_master_node_type_relation_data():
 def clear_min_master_flag():
     clear_flag('elasticsearch.min.masters.available')
 
-
-@when('elasticsearch.{}.available'.format(ES_NODE_TYPE),
-      'leadership.is_leader',
-      'grafana-source.available')
-@when_any('elasticsearch.all',
-          'elasticsearch.master')
-@when_not('elasticsearch.grafana.available')
-def provide_grafana_source(grafana):
-    grafana.provide(
-        source_type='elasticsearch',
-        url_or_port='http://{}:{}'.format(
-            ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT),
-        description='Juju generated source elasticsearch source',
-        database='elasticsearch')
-    status_set('active', 'Grafana joined')
-    set_flag('elasticsearch.grafana.available')
-
-
-@when_not('grafana-source.available',
-          'elasticsearch.grafana.unavailable')
-@when('elasticsearch.grafana.available')
-def remove_grafana_source_flags():
-    set_flag('elasticsearch.grafana.unavailable')
