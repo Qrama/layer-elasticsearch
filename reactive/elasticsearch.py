@@ -27,6 +27,7 @@ from charmhelpers.core.host import (
     service_restart,
     service_running,
     service_start,
+    fstab_remove
 )
 
 from charmhelpers.core import unitdata
@@ -62,6 +63,13 @@ register_trigger(when='elasticsearch.grafana.unavailable',
                  clear_flag='elasticsearch.grafana.available')
 
 set_flag('elasticsearch.{}'.format(ES_NODE_TYPE))
+
+
+@when_not('swap.removed')
+def remove_swap():
+    sp.call("swapoff -a".split())
+    fstab_remove('none')
+    set_flag('swap.removed')
 
 
 @hook('start')
@@ -204,12 +212,14 @@ def ensure_elasticsearch_started():
     """Ensure elasticsearch is started
     """
 
+    sp.call("systemctl daemon-reload".split())
+    sp.call("systemctl enable elasticsearch.service".split())
+
     # If elasticsearch isn't running start it
     if not service_running('elasticsearch'):
         service_start('elasticsearch')
-
     # If elasticsearch is running restart it
-    if service_running('elasticsearch'):
+    else:
         service_restart('elasticsearch')
 
     # Wait 100 seconds for elasticsearch to restart, then break out of the loop
