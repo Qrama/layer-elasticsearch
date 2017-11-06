@@ -21,8 +21,11 @@ DATA_DIR=/srv/elasticsearch-data
 #PID_DIR=/var/run/elasticsearch
 
 # Additional Java OPTS
+{% if java_opts %}
+ES_JAVA_OPTS="{{ java_opts }}"
+{% else %}
 #ES_JAVA_OPTS=
-
+{% endif %}
 # Configure restart on package upgrade (true, every other setting will lead to not restarting)
 #RESTART_ON_UPGRADE=true
 

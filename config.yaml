@@ -1,4 +1,8 @@
 options:
+  java-opts:
+    description: Java Opts
+    default: ""
+    type: string
   min-master-count:
     description: |
       Minimum number of master nodes

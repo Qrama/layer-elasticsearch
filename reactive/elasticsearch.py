@@ -149,14 +149,10 @@ def render_elasticsearch_conifg():
           'deb.installed.elasticsearch')
 @when('elasticsearch.storage.available')
 @when_not('elasticsearch.storage.prepared')
-def prepare_storage_defaults():
+def prepare_data_dir():
     """This should be the first thing to run after elasticsearch
     is installed.
     """
-    ctxt = {}
-    render_elasticsearch_file(
-        'elasticsearch.default.j2', DEFAULT_FILE_PATH, ctxt, 'root', 'root')
-
     if os.path.exists('/srv/elasticsearch-data'):
         chown(path='/srv/elasticsearch-data', user='elasticsearch',
               group='elasticsearch', recursive=True)
@@ -164,6 +160,23 @@ def prepare_storage_defaults():
     else:
         status_set('blocked', "DATA DIR NOT AVAILABLE _DEBUG")
         return
+
+@when_any('apt.installed.elasticsearch',
+          'deb.installed.elasticsearch')
+@when_not('elasticsearch.defaults.available')
+def render_elasticsearch_defaults():
+    """This should be the first thing to run after elasticsearch
+    is installed.
+    """
+    ctxt = {}
+    if config('java-opts'):
+        ctxt['java_opts'] = config('java-opts')
+
+    render_elasticsearch_file(
+        'elasticsearch.default.j2', DEFAULT_FILE_PATH, ctxt, 'root', 'root')
+
+    set_flag('elasticsearch.defaults.available')
+    status_set('active', "Elasticsearch defaults available")
 
 
 @when_not('elasticsearch.discovery.plugin.available')
@@ -185,7 +198,8 @@ def install_file_based_discovery_plugin():
 
 @when_not('elasticsearch.init.running')
 @when('elasticsearch.discovery.plugin.available',
-      'elasticsearch.storage.prepared')
+      'elasticsearch.storage.prepared',
+      'elasticsearch.defaults.available')
 def ensure_elasticsearch_started():
     """Ensure elasticsearch is started
     """
