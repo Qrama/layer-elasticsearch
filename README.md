@@ -93,14 +93,13 @@ juju deploy elasticsearch es-ingest -n 3 --config config.yaml
 juju deploy elasticsearch es-tribe -n 3 --config config.yaml
 
 # Make the relations between the components of the cluster
-juju relate es-master:master-data es-data:data-node
-juju relate es-master:master-node es-data:master
+# and the master node
 
-juju relate es-master:master-ingest es-ingest:ingest-node
-juju relate es-master:master-node es-ingest:master
+juju relate es-master:provide-master es-data:request-master
 
-juju relate es-master:master-tribe es-tribe:tribe-node
-juju relate es-master:master-node es-tribe:master
+juju relate es-master:provide-master es-ingest:request-master
+
+juju relate es-master:provide-master es-tribe:request-master
 ```
 
 # Managed Configuration MGMT
