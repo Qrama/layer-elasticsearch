@@ -16,6 +16,8 @@ requires:
   require-master:
     interface: "host-port"
 provides:
+  client:
+    interface: "host-port"
   provide-master:
     interface: "host-port"
 peers:

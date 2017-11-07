@@ -385,7 +385,7 @@ def get_all_master_nodes():
 
     set_flag('render.elasticsearch.unicast-hosts')
     set_flag('elasticsearch.master.acquired')
-    clear_flag('endpoint.master.host-port')
+    clear_flag('endpoint.require-master.host-port')
 
 
 # MASTER NODE Relation
@@ -400,7 +400,7 @@ def provide_master_node_type_relation_data():
     else:
         context.endpoints.provide_master.configure(
             ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT)
-    clear_flag('endpoint.master-node.joined')
+    clear_flag('endpoint.provide-master.joined')
 
 
 @when('config.changed.min-master-count',
