@@ -14,19 +14,19 @@ series:
 subordinate: false
 requires:
   require-master:
-    interface: "host-port"
+    interface: "elasticsearch"
 provides:
   client:
-    interface: "host-port"
+    interface: "elasticsearch"
   provide-master:
-    interface: "host-port"
+    interface: "elasticsearch"
 peers:
   member:
-    interface: "host-port"
+    interface: "elasticsearch"
 extra-bindings:
   public:
   cluster:
-storage:
-  data:
-    type: filesystem
-    location: /srv/elasticsearch-data
+#storage:
+#  data:
+#    type: filesystem
+#    location: /srv/elasticsearch-data

@@ -24,6 +24,7 @@ from charmhelpers.core.hookenv import (
     status_set,
 )
 from charmhelpers.core.host import (
+    chownr,
     service_restart,
     service_running,
     service_start,
@@ -34,7 +35,6 @@ from charmhelpers.core import unitdata
 
 from charms.layer.elasticsearch import (
     # pylint: disable=E0611,E0401,C0412
-    chown,
     es_version,
     render_elasticsearch_file,
     DISCOVERY_FILE_PATH,
@@ -42,6 +42,7 @@ from charms.layer.elasticsearch import (
     ELASTICSEARCH_YML_PATH,
     ES_PUBLIC_INGRESS_ADDRESS,
     ES_CLUSTER_INGRESS_ADDRESS,
+    ES_CLUSTER_NAME,
     ES_NODE_TYPE,
     ES_HTTP_PORT,
     ES_TRANSPORT_PORT,
@@ -155,19 +156,20 @@ def render_elasticsearch_conifg():
 
 @when_any('apt.installed.elasticsearch',
           'deb.installed.elasticsearch')
-@when('elasticsearch.storage.available')
+#@when('elasticsearch.storage.available')
 @when_not('elasticsearch.storage.prepared')
 def prepare_data_dir():
     """This should be the first thing to run after elasticsearch
     is installed.
     """
-    if os.path.exists('/srv/elasticsearch-data'):
-        chown(path='/srv/elasticsearch-data', user='elasticsearch',
-              group='elasticsearch', recursive=True)
-        set_flag('elasticsearch.storage.prepared')
-    else:
-        status_set('blocked', "DATA DIR NOT AVAILABLE _DEBUG")
-        return
+    if not os.path.isdir('/srv/elasticsearch-data'):
+        os.makedirs("/srv/elasticsearch-data", exist_ok=True)
+
+    chownr(path='/srv/elasticsearch-data', owner='elasticsearch',
+          group='elasticsearch', follow_links=True,
+          chowntopdir=True)
+
+    set_flag('elasticsearch.storage.prepared')
 
 
 @when_any('apt.installed.elasticsearch',
@@ -372,7 +374,7 @@ def provide_client_relation_data():
     else:
         open_port(ES_HTTP_PORT)
         context.endpoints.client.configure(
-            ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT)
+            ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
     clear_flag('endpoint.client.joined')
 
 
@@ -399,7 +401,7 @@ def provide_master_node_type_relation_data():
         return
     else:
         context.endpoints.provide_master.configure(
-            ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT)
+            ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
     clear_flag('endpoint.provide-master.joined')
 
 

@@ -36,6 +36,8 @@ DEFAULT_FILE_PATH = os.path.join('/', 'etc', 'default', 'elasticsearch')
 
 ES_NODE_TYPE = config('node-type')
 
+ES_CLUSTER_NAME = config('cluster-name')
+
 ES_HTTP_PORT = 9200
 
 ES_TRANSPORT_PORT = 9300
