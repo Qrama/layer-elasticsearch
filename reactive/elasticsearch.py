@@ -83,24 +83,11 @@ def set_storage_available_flag():
     set_flag('elasticsearch.storage.available')
 
 
-# Peer Relation Handlers
-@when_any('endpoint.member.joined',
-          'endpoint.member.changed')
-def elasticsearch_member_joined():
-    set_flag('update.peers')
-
-
-@when('update.peers')
+@when('endpoint.member.joined')
 def update_unitdata_kv():
     peers = endpoint_from_flag('endpoint.member.joined').all_units
-    if len(peers) > 0 and len([item for item in peers if item._data is not None]) > 0:
-        # Not sure if this will work correctly with network-get/spaces
-        # TODO(jamesbeedy): figure this out (possibly talk to cory_fu in #juju)
-        kv.set('peer-nodes', [peer._data['private-address'] for peer in peers])
-    else:
-        kv.set('peer-nodes', [])
+    kv.set('peer-nodes', [peer._data['private-address'] for peer in peers])
     set_flag('render.elasticsearch.unicast-hosts')
-    clear_flag('update.peers')
 
 
 # Utility Handlers
