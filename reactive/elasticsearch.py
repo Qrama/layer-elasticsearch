@@ -84,12 +84,8 @@ def set_storage_available_flag():
 
 
 # Peer Relation Handlers
-@when('endpoint.member.changed')
-def elasticsearch_member_changed():
-    set_flag('update.peers')
-
-
-@when('endpoint.member.joined')
+@when_any('endpoint.member.joined',
+          'endpoint.member.changed')
 def elasticsearch_member_joined():
     set_flag('update.peers')
 
@@ -97,7 +93,7 @@ def elasticsearch_member_joined():
 @when('update.peers')
 def update_unitdata_kv():
     peers = endpoint_from_flag('endpoint.member.joined').all_units
-    if len(peers) > 0:
+    if len(peers) > 0 and len([item for item in peers if item._data is not None]) > 0:
         # Not sure if this will work correctly with network-get/spaces
         # TODO(jamesbeedy): figure this out (possibly talk to cory_fu in #juju)
         kv.set('peer-nodes', [peer._data['private-address'] for peer in peers])
@@ -376,14 +372,15 @@ def provide_client_relation_data():
     clear_flag('endpoint.client.joined')
 
 
+
+# Non-Master Node Relation
 @when('endpoint.require-master.joined')
 def get_all_master_nodes():
     master_nodes = []
 
-    for application in endpoint_from_flag(
-       'require-master.available').relation_data():
-        for master_node in application['hosts']:
-            master_nodes.append(master_node['host'])
+    for es in endpoint_from_flag(
+       'endpoint.require-master.joined').relation_data():
+            master_nodes.append(es['host'])
 
     kv.set('master-nodes', master_nodes)
 
@@ -392,7 +389,7 @@ def get_all_master_nodes():
     clear_flag('endpoint.require-master.joined')
 
 
-# MASTER NODE Relation
+# Master Node Relation
 @when('endpoint.provide-master.joined')
 def provide_master_node_type_relation_data():
     if not ES_NODE_TYPE == 'master':
@@ -402,7 +399,7 @@ def provide_master_node_type_relation_data():
                    "wrong node-type for relation")
         return
     else:
-        endpoint_from_flag('provide-master.available').configure(
+        endpoint_from_flag('endpoint.provide-master.joined').configure(
             ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
     clear_flag('endpoint.provide-master.joined')
 
