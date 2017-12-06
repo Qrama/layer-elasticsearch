@@ -7,7 +7,7 @@ from time import sleep
 
 from charms.reactive import (
     clear_flag,
-    context,
+    endpoint_from_flag,
     is_flag_set,
     register_trigger,
     set_flag,
@@ -98,7 +98,7 @@ def elasticsearch_member_joined():
 
 @when('update.peers')
 def update_unitdata_kv():
-    peers = context.endpoints.member.peer_info()
+    peers = endpoint_from_flag('endpoint.member.cluster.joined')
     if len(peers) > 0:
         # Not sure if this will work correctly with network-get/spaces
         # TODO(jamesbeedy): figure this out (possibly talk to cory_fu in #juju)
@@ -156,7 +156,7 @@ def render_elasticsearch_conifg():
 
 @when_any('apt.installed.elasticsearch',
           'deb.installed.elasticsearch')
-#@when('elasticsearch.storage.available')
+# @when('elasticsearch.storage.available')
 @when_not('elasticsearch.storage.prepared')
 def prepare_data_dir():
     """This should be the first thing to run after elasticsearch
@@ -166,8 +166,8 @@ def prepare_data_dir():
         os.makedirs("/srv/elasticsearch-data", exist_ok=True)
 
     chownr(path='/srv/elasticsearch-data', owner='elasticsearch',
-          group='elasticsearch', follow_links=True,
-          chowntopdir=True)
+           group='elasticsearch', follow_links=True,
+           chowntopdir=True)
 
     set_flag('elasticsearch.storage.prepared')
 
@@ -373,21 +373,25 @@ def provide_client_relation_data():
         return
     else:
         open_port(ES_HTTP_PORT)
-        context.endpoints.client.configure(
+        endpoint_from_flag('endpoint.client.available').configure(
             ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
     clear_flag('endpoint.client.joined')
 
 
-@when('endpoint.require-master.host-port')
+@when('endpoint.require-master.joined')
 def get_all_master_nodes():
     master_nodes = []
-    for master_node in context.endpoints.require_master.relation_data():
-        master_nodes.append(master_node['host'])
+
+    for application in endpoint_from_flag(
+       'require-master.available').relation_data():
+        for master_node in application['hosts']:
+            master_nodes.append(master_node['host'])
+
     kv.set('master-nodes', master_nodes)
 
     set_flag('render.elasticsearch.unicast-hosts')
     set_flag('elasticsearch.master.acquired')
-    clear_flag('endpoint.require-master.host-port')
+    clear_flag('endpoint.require-master.joined')
 
 
 # MASTER NODE Relation
@@ -400,7 +404,7 @@ def provide_master_node_type_relation_data():
                    "wrong node-type for relation")
         return
     else:
-        context.endpoints.provide_master.configure(
+        endpoint_from_flag('provide-master.available').configure(
             ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
     clear_flag('endpoint.provide-master.joined')
 
@@ -409,4 +413,3 @@ def provide_master_node_type_relation_data():
       'elasticsearch.juju.started')
 def clear_min_master_flag():
     clear_flag('elasticsearch.min.masters.available')
-
