@@ -74,7 +74,7 @@ def remove_swap():
 
 
 @hook('start')
-def update_peers_on_start():
+def set_elasticsearch_started_flag():
     set_flag('elasticsearch.juju.started')
 
 
@@ -84,21 +84,19 @@ def set_storage_available_flag():
 
 
 # Peer Relation Handlers
-@when('endpoint.member.cluster.departed')
-def elasticsearch_member_departed():
+@when('endpoint.member.changed')
+def elasticsearch_member_changed():
     set_flag('update.peers')
-    clear_flag('endpoint.member.cluster.departed')
 
 
-@when('endpoint.member.cluster.joined')
+@when('endpoint.member.joined')
 def elasticsearch_member_joined():
     set_flag('update.peers')
-    clear_flag('endpoint.member.cluster.joined')
 
 
 @when('update.peers')
 def update_unitdata_kv():
-    peers = endpoint_from_flag('endpoint.member.cluster.joined')
+    peers = endpoint_from_flag('endpoint.member.joined').all_units
     if len(peers) > 0:
         # Not sure if this will work correctly with network-get/spaces
         # TODO(jamesbeedy): figure this out (possibly talk to cory_fu in #juju)
