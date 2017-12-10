@@ -86,8 +86,14 @@ def set_storage_available_flag():
 @when('endpoint.member.joined')
 def update_unitdata_kv():
     peers = endpoint_from_flag('endpoint.member.joined').all_units
-    kv.set('peer-nodes', [peer._data['private-address'] for peer in peers])
-    set_flag('render.elasticsearch.unicast-hosts')
+    if len(peers) > 0 and \
+       len([peer._data['private-address']
+            for peer in peers if peer._data is not None]) > 0:
+        kv.set('peer-nodes',
+               [peer._data['private-address']
+                for peer in peers if peer._data is not None])
+        set_flag('render.elasticsearch.unicast-hosts')
+    clear_flag('endpoint.member.joined')
 
 
 # Utility Handlers
@@ -105,10 +111,11 @@ def update_discovery_file():
     """
     nodes = []
 
-    for node_type in ['data-nodes', 'ingest-nodes',
-                      'tribe-nodes', 'peer-nodes', 'master-nodes']:
-        if kv.get(node_type, ''):
-            [nodes.append(node) for node in kv.get(node_type)]
+    if is_flag_set('elasticsearch.all') or \
+       is_flag_set('elasticsearch.master'):
+        nodes = kv.get('peer-nodes', [])
+    else:
+        nodes = kv.get('master-nodes', []) + kv.get('peer-nodes', [])
 
     render_elasticsearch_file(
         'unicast_hosts.txt.j2', DISCOVERY_FILE_PATH, {'nodes': nodes})
@@ -354,10 +361,9 @@ def provide_client_relation_data():
         return
     else:
         open_port(ES_HTTP_PORT)
-        endpoint_from_flag('endpoint.client.available').configure(
+        endpoint_from_flag('endpoint.client.joined').configure(
             ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
     clear_flag('endpoint.client.joined')
-
 
 
 # Non-Master Node Relation
@@ -387,7 +393,7 @@ def provide_master_node_type_relation_data():
         return
     else:
         endpoint_from_flag('endpoint.provide-master.joined').configure(
-            ES_CLUSTER_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
+            ES_CLUSTER_INGRESS_ADDRESS, ES_TRANSPORT_PORT, ES_CLUSTER_NAME)
     clear_flag('endpoint.provide-master.joined')
 
 
