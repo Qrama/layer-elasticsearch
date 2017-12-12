@@ -57,11 +57,6 @@ kv = unitdata.kv()
 register_trigger(when='elasticsearch.version.set',
                  set_flag='elasticsearch.init.complete')
 
-register_trigger(when='elasticsearch.grafana.available',
-                 clear_flag='elasticsearch.grafana.unavailable')
-
-register_trigger(when='elasticsearch.grafana.unavailable',
-                 clear_flag='elasticsearch.grafana.available')
 
 set_flag('elasticsearch.{}'.format(ES_NODE_TYPE))
 
@@ -93,7 +88,6 @@ def update_unitdata_kv():
                [peer._data['private-address']
                 for peer in peers if peer._data is not None])
         set_flag('render.elasticsearch.unicast-hosts')
-    clear_flag('endpoint.member.joined')
 
 
 # Utility Handlers
@@ -105,7 +99,8 @@ def restart_elasticsearch():
     clear_flag('elasticsearch.needs.restart')
 
 
-@when('render.elasticsearch.unicast-hosts')
+@when('render.elasticsearch.unicast-hosts',
+      'elasticsearch.discovery.plugin.available')
 def update_discovery_file():
     """Update discovery-file
     """
@@ -352,6 +347,7 @@ def elasticsearch_node_available():
 # Client Relation
 @when('endpoint.client.joined',
       'elasticsearch.{}.available'.format(ES_NODE_TYPE))
+@when_not('juju.elasticsearch.client.joined')
 def provide_client_relation_data():
     if ES_NODE_TYPE not in ['master', 'all']:
         log("SOMETHING BAD IS HAPPENING - wronge nodetype for client relation")
@@ -363,27 +359,30 @@ def provide_client_relation_data():
         open_port(ES_HTTP_PORT)
         endpoint_from_flag('endpoint.client.joined').configure(
             ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
-    clear_flag('endpoint.client.joined')
+
+    set_flag('juju.elasticsearch.client.joined')
 
 
 # Non-Master Node Relation
-@when('endpoint.require-master.joined')
+@when('endpoint.require-master.available')
+@when_not('juju.elasticsearch.require-master.joined')
 def get_all_master_nodes():
     master_nodes = []
 
     for es in endpoint_from_flag(
-       'endpoint.require-master.joined').relation_data():
+       'endpoint.require-master.available').relation_data():
             master_nodes.append(es['host'])
 
     kv.set('master-nodes', master_nodes)
 
     set_flag('render.elasticsearch.unicast-hosts')
     set_flag('elasticsearch.master.acquired')
-    clear_flag('endpoint.require-master.joined')
+    set_flag('juju.elasticsearch.require-master.joined')
 
 
 # Master Node Relation
 @when('endpoint.provide-master.joined')
+@when_not('juju.elasticsearch.provide-master.joined')
 def provide_master_node_type_relation_data():
     if not ES_NODE_TYPE == 'master':
         log("SOMETHING BAD IS HAPPENING - wronge node type for relation")
@@ -394,10 +393,11 @@ def provide_master_node_type_relation_data():
     else:
         endpoint_from_flag('endpoint.provide-master.joined').configure(
             ES_CLUSTER_INGRESS_ADDRESS, ES_TRANSPORT_PORT, ES_CLUSTER_NAME)
-    clear_flag('endpoint.provide-master.joined')
+
+    set_flag('juju.elasticsearch.provide-master.joined')
 
 
-@when('config.changed.min-master-count',
-      'elasticsearch.juju.started')
-def clear_min_master_flag():
-    clear_flag('elasticsearch.min.masters.available')
+#@when('config.changed.min-master-count',
+#      'elasticsearch.juju.started')
+#def clear_min_master_flag():
+#    clear_flag('elasticsearch.min.masters.available')
