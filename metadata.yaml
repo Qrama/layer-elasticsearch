@@ -26,7 +26,7 @@ peers:
 extra-bindings:
   public:
   cluster:
-#storage:
-#  data:
-#    type: filesystem
-#    location: /srv/elasticsearch-data
+storage:
+  data:
+    type: filesystem
+    location: /srv/elasticsearch-data
