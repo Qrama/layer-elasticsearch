@@ -139,7 +139,7 @@ def render_elasticsearch_conifg():
 
 @when_any('apt.installed.elasticsearch',
           'deb.installed.elasticsearch')
-@when('elasticsearch.storage.available')
+#@when('elasticsearch.storage.available')
 @when_not('elasticsearch.storage.prepared')
 def prepare_data_dir():
     """This should be the first thing to run after elasticsearch
