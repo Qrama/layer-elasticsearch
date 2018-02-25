@@ -4,7 +4,6 @@ import os
 import subprocess as sp
 from time import sleep
 
-
 from charms.reactive import (
     clear_flag,
     endpoint_from_flag,
@@ -139,12 +138,13 @@ def render_elasticsearch_conifg():
 
 @when_any('apt.installed.elasticsearch',
           'deb.installed.elasticsearch')
-#@when('elasticsearch.storage.available')
+# @when('elasticsearch.storage.available')
 @when_not('elasticsearch.storage.prepared')
 def prepare_data_dir():
     """This should be the first thing to run after elasticsearch
     is installed.
     """
+
     if not os.path.isdir('/srv/elasticsearch-data'):
         os.makedirs("/srv/elasticsearch-data", exist_ok=True)
 
@@ -178,8 +178,7 @@ def render_elasticsearch_defaults():
 def install_file_based_discovery_plugin():
     """Install the file based discovery plugin
     """
-    # TODO(jamesbeedy): REVISIT TO SUPPORT MORE DISCOVERY PLUGINS
-    # Possibly this isn't the best location to do this - revisit
+
     if os.path.exists(ES_PLUGIN):
         sp.call("{} install discovery-file".format(ES_PLUGIN).split())
         set_flag('elasticsearch.discovery.plugin.available')
@@ -245,19 +244,8 @@ def get_set_elasticsearch_version():
 @when_not('elasticsearch.transport.port.available')
 def open_transport_port():
     """Open port 9300 for transport protocol
-
-    This is a quick hack to make sure the correct ports are
-    open following successful initialization.
-
-    Possibly there is a smarter
-    way to do this then just opening the port directly?
-
-    /charms/layer/elasticsearch_security.py ?
-
-    We don't need both 9200 and 9300 open to the public
-    internet, ALMOST NEVER should this happen.
     """
-    # TODO(jamesbeedy): Figure out a way forward here other then this.
+    # TODO(jamesbeedy): Figure out a way forward here other then this...
     # or possibly this is ok, do I even need to open port 9300
     # if it is a best practice to not have es cross talk over wan? -
     # then we wouldn't even need to open the port if we just ensure
@@ -395,9 +383,3 @@ def provide_master_node_type_relation_data():
             ES_CLUSTER_INGRESS_ADDRESS, ES_TRANSPORT_PORT, ES_CLUSTER_NAME)
 
     set_flag('juju.elasticsearch.provide-master.joined')
-
-
-#@when('config.changed.min-master-count',
-#      'elasticsearch.juju.started')
-#def clear_min_master_flag():
-#    clear_flag('elasticsearch.min.masters.available')

@@ -8,7 +8,10 @@ description: |
   contains the infrastructure needed to an ElasticSearch node.
 tags:
   - elasticsearch
-  - misc
+  - elastic.co
+  - data-processing
+  - database
+  - elastic
 series:
 - xenial
 subordinate: false
