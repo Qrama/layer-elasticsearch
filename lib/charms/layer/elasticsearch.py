@@ -63,6 +63,7 @@ DATA_NODE_CONFIG = """
 node.master: false
 node.data: true
 node.ingest: false
+search.remote.connect: false
 """
 
 INGEST_NODE_CONFIG = """
