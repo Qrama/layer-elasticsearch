@@ -277,7 +277,7 @@ def node_type_all_init_complete():
 
 
 # Node-Type Tribe/Ingest/Data Handlers
-@when_any('elasticsearch.tribe',
+@when_any('elasticsearch.coordinating',
           'elasticsearch.ingest',
           'elasticsearch.data')
 @when('elasticsearch.init.complete')
@@ -286,7 +286,7 @@ def block_until_master_relation():
     """
     Block non-master node types until we have a master relation.
 
-    (tribe, ingest, data)
+    (coordinating, ingest, data)
     """
     status_set('blocked',
                'Need relation to Elasticsearch master to continue')
@@ -326,7 +326,7 @@ def elasticsearch_node_available():
     This is meant to restart elasticsearch and ensure
     running after node type specific configuration.
 
-    (master, tribe, ingest, data)
+    (master, coordinating, ingest, data)
     """
 
     if not service_running('elasticsearch'):

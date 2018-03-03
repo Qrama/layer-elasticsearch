@@ -85,7 +85,7 @@ NODE_TYPE_MAP = {'all': None,
                  'master': MASTER_NODE_CONFIG,
                  'data': DATA_NODE_CONFIG,
                  'ingest': INGEST_NODE_CONFIG,
-                 'tribe': COORDINATING_NODE_CONFIG}
+                 'coordinating': COORDINATING_NODE_CONFIG}
 
 
 kv = unitdata.kv()

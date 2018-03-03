@@ -15,7 +15,7 @@ options:
     default: ""
   node-type:
     description: |
-      Type of elasticsearch node. Choices are 'data', 'master', 'ingest', 'tribe', 'all'.
+      Type of elasticsearch node. Choices are 'data', 'master', 'ingest', 'coordinating', 'all'.
     type: string
     default: 'all'
   firewall_enabled:
