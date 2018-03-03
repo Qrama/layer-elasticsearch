@@ -37,7 +37,8 @@ from charms.layer.elasticsearch import (
     es_version,
     render_elasticsearch_file,
     DISCOVERY_FILE_PATH,
-    DEFAULT_FILE_PATH,
+    ES_DATA_DIR,
+    ES_DEFAULT_FILE_PATH,
     ELASTICSEARCH_YML_PATH,
     ES_PUBLIC_INGRESS_ADDRESS,
     ES_CLUSTER_INGRESS_ADDRESS,
@@ -62,23 +63,30 @@ set_flag('elasticsearch.{}'.format(ES_NODE_TYPE))
 
 @when_not('swap.removed')
 def remove_swap():
-    sp.call("swapoff -a".split())
+    """
+    Prevent swap
+    """
+    sp.call(["swapoff", "-a"])
     fstab_remove('none')
     set_flag('swap.removed')
 
 
 @hook('start')
 def set_elasticsearch_started_flag():
+    """
+    This flag is used to gate against certain
+    charm code runnig until the start state has been reached.
+    """
     set_flag('elasticsearch.juju.started')
-
-
-@hook('data-storage-attached')
-def set_storage_available_flag():
-    set_flag('elasticsearch.storage.available')
 
 
 @when('endpoint.member.joined')
 def update_unitdata_kv():
+    """
+    This handler is ran when ever a peer is joined.
+    (all node types use this handler to coordinate peers)
+    """
+
     peers = endpoint_from_flag('endpoint.member.joined').all_units
     if len(peers) > 0 and \
        len([peer._data['private-address']
@@ -89,24 +97,16 @@ def update_unitdata_kv():
         set_flag('render.elasticsearch.unicast-hosts')
 
 
-# Utility Handlers
-@when('elasticsearch.needs.restart')
-def restart_elasticsearch():
-    """Restart elasticsearch
-    """
-    service_restart('elasticsearch')
-    clear_flag('elasticsearch.needs.restart')
-
-
 @when('render.elasticsearch.unicast-hosts',
       'elasticsearch.discovery.plugin.available')
 def update_discovery_file():
-    """Update discovery-file
     """
+    Update discovery-file
+    """
+
     nodes = []
 
-    if is_flag_set('elasticsearch.all') or \
-       is_flag_set('elasticsearch.master'):
+    if is_flag_set('elasticsearch.all') or is_flag_set('elasticsearch.master'):
         nodes = kv.get('peer-nodes', [])
     else:
         nodes = kv.get('master-nodes', []) + kv.get('peer-nodes', [])
@@ -118,9 +118,11 @@ def update_discovery_file():
 
 
 @when('render.elasticsearch.yml')
-def render_elasticsearch_conifg():
-    """Render /etc/elasticsearch/elasticsearch.yml
+def render_elasticsearch_yml():
     """
+    Render /etc/elasticsearch/elasticsearch.yml
+    """
+
     ctxt = \
         {'cluster_name': config('cluster-name'),
          'cluster_network_ip': ES_CLUSTER_INGRESS_ADDRESS,
@@ -132,23 +134,22 @@ def render_elasticsearch_conifg():
 
     if not is_flag_set('elasticsearch.init.config.rendered'):
         set_flag('elasticsearch.init.config.rendered')
-    set_flag('elasticsearch.needs.restart')
+    service_restart('elasticsearch')
     clear_flag('render.elasticsearch.yml')
 
 
 @when_any('apt.installed.elasticsearch',
           'deb.installed.elasticsearch')
-# @when('elasticsearch.storage.available')
 @when_not('elasticsearch.storage.prepared')
-def prepare_data_dir():
-    """This should be the first thing to run after elasticsearch
-    is installed.
+def prepare_es_data_dir():
+    """
+    Create (if not exists) and set perms on elasticsearch data dir.
     """
 
-    if not os.path.isdir('/srv/elasticsearch-data'):
-        os.makedirs("/srv/elasticsearch-data", exist_ok=True)
+    if not ES_DATA_DIR.exists():
+        ES_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-    chownr(path='/srv/elasticsearch-data', owner='elasticsearch',
+    chownr(path=str(ES_DATA_DIR), owner='elasticsearch',
            group='elasticsearch', follow_links=True,
            chowntopdir=True)
 
@@ -159,15 +160,19 @@ def prepare_data_dir():
           'deb.installed.elasticsearch')
 @when_not('elasticsearch.defaults.available')
 def render_elasticsearch_defaults():
-    """This should be the first thing to run after elasticsearch
-    is installed.
     """
+    Renders /etc/default/elasticsearch
+
+    The following can be extended to allow additional
+    arguments to be added to the /etc/default/elasticsearch.
+    """
+
     ctxt = {}
     if config('java-opts'):
         ctxt['java_opts'] = config('java-opts')
 
     render_elasticsearch_file(
-        'elasticsearch.default.j2', DEFAULT_FILE_PATH, ctxt, 'root', 'root')
+        'elasticsearch.default.j2', ES_DEFAULT_FILE_PATH, ctxt, 'root', 'root')
 
     set_flag('elasticsearch.defaults.available')
     status_set('active', "Elasticsearch defaults available")
@@ -176,7 +181,8 @@ def render_elasticsearch_defaults():
 @when_not('elasticsearch.discovery.plugin.available')
 @when_any('deb.installed.elasticsearch', 'apt.installed.elasticsearch')
 def install_file_based_discovery_plugin():
-    """Install the file based discovery plugin
+    """
+    Install the file based discovery plugin.
     """
 
     if os.path.exists(ES_PLUGIN):
@@ -194,11 +200,13 @@ def install_file_based_discovery_plugin():
       'elasticsearch.storage.prepared',
       'elasticsearch.defaults.available')
 def ensure_elasticsearch_started():
-    """Ensure elasticsearch is started
+    """
+    Ensure elasticsearch is started.
+    (this should only run once)
     """
 
-    sp.call("systemctl daemon-reload".split())
-    sp.call("systemctl enable elasticsearch.service".split())
+    sp.call(["systemctl", "daemon-reload"])
+    sp.call(["systemctl", "enable", "elasticsearch.service"])
 
     # If elasticsearch isn't running start it
     if not service_running('elasticsearch'):
@@ -228,13 +236,10 @@ def ensure_elasticsearch_started():
 @when('elasticsearch.init.running')
 @when_not('elasticsearch.version.set')
 def get_set_elasticsearch_version():
-    """Wait until we have the version to confirm
-    elasticsearch has started
     """
-
-    status_set('maintenance', 'Waiting for Elasticsearch to start')
+    Set Elasticsearch version.
+    """
     application_version_set(es_version())
-    status_set('active', 'Elasticsearch running - init complete')
     set_flag('elasticsearch.version.set')
 
 
@@ -243,14 +248,12 @@ def get_set_elasticsearch_version():
 @when('elasticsearch.init.complete')
 @when_not('elasticsearch.transport.port.available')
 def open_transport_port():
-    """Open port 9300 for transport protocol
+    """
+    Open port 9300 for transport protocol
     """
     # TODO(jamesbeedy): Figure out a way forward here other then this...
     # or possibly this is ok, do I even need to open port 9300
     # if it is a best practice to not have es cross talk over wan? -
-    # then we wouldn't even need to open the port if we just ensure
-    # the readme states outright that the charm doesn't support
-    # es <-> es traffic over the WAN.
     # for now, just open the transport port
     open_port(ES_TRANSPORT_PORT)
     set_flag('elasticsearch.transport.port.available')
@@ -280,7 +283,10 @@ def node_type_all_init_complete():
 @when('elasticsearch.init.complete')
 @when_not('elasticsearch.master.acquired')
 def block_until_master_relation():
-    """Block non-master node types until we have a master relation
+    """
+    Block non-master node types until we have a master relation.
+
+    (tribe, ingest, data)
     """
     status_set('blocked',
                'Need relation to Elasticsearch master to continue')
@@ -292,9 +298,11 @@ def block_until_master_relation():
       'elasticsearch.juju.started')
 @when_not('elasticsearch.min.masters.available')
 def block_until_min_masters():
-    """Block master node types from making further progress
-    until we have >= config('min-master-count')
     """
+    Block master node types from making further progress
+    until we have >= config('min-master-count').
+    """
+
     if not (len(kv.get('peer-nodes', [])) >= (config('min-master-count') - 1)):
         status_set('blocked',
                    'Need >= config("min-master-count") masters to continue')
@@ -314,6 +322,13 @@ def render_elasticsearch_yml_init():
 @when('elasticsearch.init.config.rendered')
 @when_not('elasticsearch.all')
 def elasticsearch_node_available():
+    """
+    This is meant to restart elasticsearch and ensure
+    running after node type specific configuration.
+
+    (master, tribe, ingest, data)
+    """
+
     if not service_running('elasticsearch'):
         cnt = 0
         while not service_running('elasticsearch') and cnt < 100:
@@ -337,6 +352,12 @@ def elasticsearch_node_available():
       'elasticsearch.{}.available'.format(ES_NODE_TYPE))
 @when_not('juju.elasticsearch.client.joined')
 def provide_client_relation_data():
+    """
+    Set client relation data.
+
+    (only 'master' or 'all' type nodes should run this code)
+    """
+
     if ES_NODE_TYPE not in ['master', 'all']:
         log("SOMETHING BAD IS HAPPENING - wronge nodetype for client relation")
         status_set('blocked',

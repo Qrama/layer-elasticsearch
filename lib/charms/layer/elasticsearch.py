@@ -4,6 +4,8 @@ import json
 import os
 import requests
 import shutil
+
+from pathlib import Path
 from time import sleep
 
 from jinja2 import Environment, FileSystemLoader
@@ -25,14 +27,20 @@ from charmhelpers.core.host import (
 )
 
 
+ES_DATA_DIR = Path('/srv/elasticsearch-data')
+
+ES_CONFIG_DIR = os.path.join('/', 'etc', 'elasticsearch')
+
+ELASTICSEARCH_YML_PATH = os.path.join(ES_CONFIG_DIR, 'elasticsearch.yml')
+
 ES_PUBLIC_INGRESS_ADDRESS = network_get('public')['ingress-addresses'][0]
 
 ES_CLUSTER_INGRESS_ADDRESS = network_get('cluster')['ingress-addresses'][0]
 
 DISCOVERY_FILE_PATH = os.path.join(
-    '/', 'etc', 'elasticsearch', 'discovery-file', 'unicast_hosts.txt')
+    ES_CONFIG_DIR, 'discovery-file', 'unicast_hosts.txt')
 
-DEFAULT_FILE_PATH = os.path.join('/', 'etc', 'default', 'elasticsearch')
+ES_DEFAULT_FILE_PATH = os.path.join('/', 'etc', 'default', 'elasticsearch')
 
 ES_NODE_TYPE = config('node-type')
 
@@ -76,9 +84,6 @@ NODE_TYPE_MAP = {'all': None,
                  'data': DATA_NODE_CONFIG,
                  'ingest': INGEST_NODE_CONFIG,
                  'tribe': COORDINATING_NODE_CONFIG}
-
-ELASTICSEARCH_YML_PATH = \
-    os.path.join('/', 'etc', 'elasticsearch', 'elasticsearch.yml')
 
 
 kv = unitdata.kv()
