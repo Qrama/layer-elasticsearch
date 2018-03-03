@@ -24,7 +24,7 @@ The options for the `node-type` config can be explained as follows:
 * `master` - The node will assume the 'master' node-type. Master nodes will wait for the number of peers to be >= the charm configuration
 option `minn-master-count` (this defaults to 1) before bootstrapping the cluster. 
 
-* `tribe` - The node will assume the 'tribe' node-type. Tribe nodes will wait until they have a relation to the master before
+* `coordinator` - The node will assume the 'coordinator' node-type. Coordinator nodes will wait until they have a relation to the master before
 joining the cluster.
 
 * `data` - The node will assume the 'data' node-type. Data nodes will wait until they have a relation to the master before
@@ -63,7 +63,7 @@ For example:
 juju deploy elasticsearch -n 3
 ```
 
-The above command would deploy 3 elasticsearch nodes, of which all are master, data, ingest, and tribe.
+The above command would deploy 3 elasticsearch nodes, of which all are master, data, ingest, and coordinator.
 This functionality mirrors that of the legacy Juju Elasticsearch charm, you can deploy and scale a cluster without worrying about node-types
 because every node is all node-types.
 
@@ -77,8 +77,8 @@ es-master:
   node-type: "master"
 es-data:
   node-type: "data"
-es-tribe:
-  node-type: "tribe"
+es-coordinator:
+  node-type: "coordinator"
 es-ingest:
   node-type: "ingest"
 ```
@@ -90,7 +90,7 @@ juju deploy elasticsearch es-data -n 3 --config config.yaml
 
 juju deploy elasticsearch es-ingest -n 3 --config config.yaml
 
-juju deploy elasticsearch es-tribe -n 3 --config config.yaml
+juju deploy elasticsearch es-coordinator -n 3 --config config.yaml
 
 # Make the relations between the components of the cluster
 # and the master node
@@ -99,7 +99,7 @@ juju relate es-master:provide-master es-data:request-master
 
 juju relate es-master:provide-master es-ingest:request-master
 
-juju relate es-master:provide-master es-tribe:request-master
+juju relate es-master:provide-master es-coordinator:request-master
 ```
 
 # Managed Configuration MGMT
