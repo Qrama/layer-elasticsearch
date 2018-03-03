@@ -57,6 +57,7 @@ MASTER_NODE_CONFIG = """
 node.master: true
 node.data: false
 node.ingest: false
+search.remote.connect: false
 """
 
 DATA_NODE_CONFIG = """
