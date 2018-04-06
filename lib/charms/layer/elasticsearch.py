@@ -4,6 +4,7 @@ import json
 import os
 import requests
 import shutil
+import socket
 
 from pathlib import Path
 from time import sleep
@@ -15,6 +16,7 @@ from charmhelpers.core.hookenv import (
     config,
     log,
     network_get,
+    unit_private_ip,
     status_set,
 )
 
@@ -27,15 +29,21 @@ from charmhelpers.core.host import (
 )
 
 
+def get_local_ip():
+    _, _, iplist = socket.gethostbyaddr(socket.gethostname())
+    return iplist[0];
+
 ES_DATA_DIR = Path('/srv/elasticsearch-data')
 
 ES_CONFIG_DIR = os.path.join('/', 'etc', 'elasticsearch')
 
 ELASTICSEARCH_YML_PATH = os.path.join(ES_CONFIG_DIR, 'elasticsearch.yml')
 
-ES_PUBLIC_INGRESS_ADDRESS = network_get('public')['ingress-addresses'][0]
+ES_PRIVATE_ADDRESS = get_local_ip()
 
-ES_CLUSTER_INGRESS_ADDRESS = network_get('cluster')['ingress-addresses'][0]
+#ES_PUBLIC_INGRESS_ADDRESS = network_get('public')['ingress-addresses'][0]
+
+#ES_CLUSTER_INGRESS_ADDRESS = network_get('cluster')['ingress-addresses'][0]
 
 DISCOVERY_FILE_PATH = os.path.join(
     ES_CONFIG_DIR, 'discovery-file', 'unicast_hosts.txt')

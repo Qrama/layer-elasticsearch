@@ -1,6 +1,6 @@
 name: elasticsearch
 summary: Open Source, Distributed, RESTful Search Engine
-maintainer: James Beedy <jamesbeedy@gmail.com>
+maintainer: Gregory Van Seghbroeck <gregory.vanseghbroeck@tengu.io>
 description: |
   Elasticsearch is a search server based on Lucene. It provides a
   distributed, multitenant-capable full-text search engine with a
@@ -26,9 +26,6 @@ provides:
 peers:
   member:
     interface: "elasticsearch"
-extra-bindings:
-  public:
-  cluster:
 storage:
   data:
     type: filesystem

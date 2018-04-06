@@ -1,3 +1,12 @@
+# Disclaimer
+
+This ElasticSearch charm is for 99% based on the charm of [James Beedy](https://jujucharms.com/u/omnivector/elasticsearch).
+What we have changed is the `extra_bindings` settings and which IP the charm now
+distribute over its relation. It only uses the machine's private IP. We noticed
+problems while deploying the ELK stack on GCE. It uses the FAN IP addresses to
+pass over the client relation, however the client (Kibana in this case) couldn't
+reach ElasticSearch.
+
 # Overview
 
 Elasticsearch is a flexible and powerful open source, distributed, real-time
@@ -13,7 +22,7 @@ Excerpt from [elasticsearch.org](http://www.elasticsearch.org/overview/ "Elastic
 # Usage
 This charm can be used to deploy Elasticsearch in any way that is suppored by upstream Elasticsearch, and then some.
 
-The charm configuration exposes an option called `node-type`, which is used by the charm to know what type of 
+The charm configuration exposes an option called `node-type`, which is used by the charm to know what type of
 Elasticsearch node to configure. In order to orchestrate this charm to facilitate more complex deployments,
 you must configure the node-type on a per application basis.
 
@@ -22,7 +31,7 @@ The options for the `node-type` config can be explained as follows:
 * `all` - The node will assume all roles of Elasticsearch, there will be no difference in configuration from one node to the next.
 
 * `master` - The node will assume the 'master' node-type. Master nodes will wait for the number of peers to be >= the charm configuration
-option `minn-master-count` (this defaults to 1) before bootstrapping the cluster. 
+option `minn-master-count` (this defaults to 1) before bootstrapping the cluster.
 
 * `coordinator` - The node will assume the 'coordinator' node-type. Coordinator nodes will wait until they have a relation to the master before
 joining the cluster.
@@ -119,7 +128,8 @@ Only file based discovery is currently supported (pull requests welcome!).
 # Contact Information
 
 * James Beedy <jamesbeedy@gmail.com>
-* Sebastien Pattyn <sebastien.pattyn@gmail.com>
+* Sebastien Pattyn <sebastien.pattyn@tengu.io>
+* Gregory Van Seghbroeck <gregory.vanseghbroeck@tengu.io>
 
 ## Elasticsearch
 - [Elasticsearch website](http://www.elasticsearch.org/)

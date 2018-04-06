@@ -4,6 +4,9 @@ includes:
   - 'layer:leadership'
   - 'interface:elasticsearch'
 options:
+  basic:
+    use_venv: false
+    include_system_packages: false
   elastic-base:
     elastic-pkg: "elasticsearch"
 repo: "https://github.com/omnivector-solutions/layer-elasticsearch"

@@ -40,8 +40,9 @@ from charms.layer.elasticsearch import (
     ES_DATA_DIR,
     ES_DEFAULT_FILE_PATH,
     ELASTICSEARCH_YML_PATH,
-    ES_PUBLIC_INGRESS_ADDRESS,
-    ES_CLUSTER_INGRESS_ADDRESS,
+    ES_PRIVATE_ADDRESS,
+    #ES_PUBLIC_INGRESS_ADDRESS,
+    #ES_CLUSTER_INGRESS_ADDRESS,
     ES_CLUSTER_NAME,
     ES_NODE_TYPE,
     ES_HTTP_PORT,
@@ -125,7 +126,8 @@ def render_elasticsearch_yml():
 
     ctxt = \
         {'cluster_name': config('cluster-name'),
-         'cluster_network_ip': ES_CLUSTER_INGRESS_ADDRESS,
+         #'cluster_network_ip': ES_CLUSTER_INGRESS_ADDRESS,
+         'cluster_network_ip': ES_PRIVATE_ADDRESS,
          'node_type': NODE_TYPE_MAP[config('node-type')],
          'custom_config': config('custom-config')}
 
@@ -367,7 +369,8 @@ def provide_client_relation_data():
     else:
         open_port(ES_HTTP_PORT)
         endpoint_from_flag('endpoint.client.joined').configure(
-            ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
+            ES_PRIVATE_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
+            #ES_PUBLIC_INGRESS_ADDRESS, ES_HTTP_PORT, ES_CLUSTER_NAME)
 
     set_flag('juju.elasticsearch.client.joined')
 
@@ -401,6 +404,7 @@ def provide_master_node_type_relation_data():
         return
     else:
         endpoint_from_flag('endpoint.provide-master.joined').configure(
-            ES_CLUSTER_INGRESS_ADDRESS, ES_TRANSPORT_PORT, ES_CLUSTER_NAME)
+            ES_PRIVATE_ADDRESS, ES_TRANSPORT_PORT, ES_CLUSTER_NAME)
+            #ES_CLUSTER_INGRESS_ADDRESS, ES_TRANSPORT_PORT, ES_CLUSTER_NAME)
 
     set_flag('juju.elasticsearch.provide-master.joined')
